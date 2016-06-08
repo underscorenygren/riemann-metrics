@@ -12,20 +12,49 @@ module Riemann
         ( finish - start ) * 1000
       end
 
+      """action is nil for mailer"""
+      def report(metric_name, state, controller, action, metric)
+
+        (full_metric_name, tags) = 
+          if client.opentsdb_style
+            [ metric_name, 
+              {:controller => controller
+               :action => action
+              }
+            ]
+          else
+            action.nil? 
+              [ "#{controller}.#{metric_name}",
+                [controller, metric_name]
+              ]
+              : 
+              [ "#{controller}.#{action}.#{metric_name}",
+                [controller, action, metric_name]
+              ]
+          end
+
+        client.gauge(tags, state, metric, full_metric_name)
+
+      end
+
+      def get_state(payload)
+        !payload[:exception].nil? ? Riemann::Metrics::Client::CRITICAL : Riemann::Metrics::Client::OK
+      end
+
       def process_action_action_controller channel, start, finish, id, payload
-        tags = [payload[:controller], payload[:action]]
-        service_name = tags.join(".")
-        state = !payload[:exception].nil? ? Riemann::Metrics::Client::CRITICAL : Riemann::Metrics::Client::OK
-        client.gauge (tags.dup << 'http_status'), state, payload[:status], "#{service_name}.http_status"
-        client.gauge (tags.dup << 'view_runtime'), state, payload[:view_runtime], "#{service_name}.view_runtime"
-        client.gauge (tags.dup << 'request_runtime'), state, total_time(start, finish), "#{service_name}.total_time"
-        client.gauge (tags.dup << 'db_runtime'), state, payload[:db_runtime], "#{service_name}.db_runtime"
+        controller = payload[:controller]
+        action = payload[:action]
+        state = get_state(payload)
+        report('http_status', state, controller, action, payload[:status])
+        report('view_runtime', state, controller, action, payload[:view_runtime])
+        report('request_runtime', state, controller, action, total_time(start, finish))
+        report('db_runtime', state, controller, action, payload[:db_runtime])
       end
 
       def deliver_action_mailer channel, start, finish, id, payload
         tags = [ payload[:mailer] ]
-        state = !payload[:exception].nil? ? Riemann::Metrics::Client::CRITICAL : Riemann::Metrics::Client::OK
-        client.gauge (tags.dup << 'email_send_runtime'), state, total_time(start, finish), "#{payload[:mailer]}.email_send_runtime"
+        state = get_state(payload)
+        report('email_send_runtime', state, payload[:mailer], nil, total_time(start, finish))
       end
 
     end
