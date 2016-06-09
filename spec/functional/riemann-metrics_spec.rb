@@ -109,6 +109,13 @@ describe AwesomeController, :type => :controller do
       get 'custom_metrics'
     end
 
+    it 'should be able to access the client after initialization' do
+
+      expect(Riemann::Metrics.client).not_to be_nil
+      expect(Riemann::Metrics.handler).not_to be_nil
+
+    end
+
   end
 
 end

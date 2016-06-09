@@ -4,7 +4,6 @@ require "riemann/metrics"
 module Riemann
   module Metrics
     class Engine < Rails::Engine
-      attr_reader :client, :handler
 
       config.riemann_metrics = ActiveSupport::OrderedOptions.new
 
@@ -27,6 +26,14 @@ module Riemann
         end
       end
 
+    end
+
+    def self.client
+      @client
+    end
+
+    def self.handler
+      @handler
     end
 
     def self.instrument channel, tags, state, metric, &block
