@@ -18,12 +18,12 @@ module Riemann
         (full_metric_name, tags) = 
           if client.opentsdb_style
             [ metric_name, 
-              {:controller => controller
+              {:controller => controller,
                :action => action
               }
             ]
           else
-            action.nil? 
+            action.nil? ?
               [ "#{controller}.#{metric_name}",
                 [controller, metric_name]
               ]

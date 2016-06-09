@@ -4,6 +4,8 @@ module Riemann
   module Metrics
     class Client
 
+      attr_reader :opentsdb_style
+
       OK        = "ok"
       CRITICAL  = "critical"
       WARNING   = "warning"
@@ -22,7 +24,7 @@ module Riemann
       end
 
       def client
-        @riemann_client ||= Riemann::Client.new(host: @host, port: @port)
+        @riemann_client ||= Riemann::Client.new(host: @host, port: @port, opentsdb_style: @opentsdb_style)
       end
 
       def gauge tags, state, metric, service='', description=nil
