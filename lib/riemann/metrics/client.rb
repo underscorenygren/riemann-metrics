@@ -5,6 +5,7 @@ module Riemann
     class Client
 
       attr_reader :opentsdb_style
+      attr_writer :opentsdb_style
 
       OK        = "ok"
       CRITICAL  = "critical"
@@ -28,8 +29,12 @@ module Riemann
       end
 
       def gauge tags, state, metric, service='', description=nil
-        t = tags.is_a?(Hash) ? tags.map{|k,v|"#{k}=#{v}"} : tags
-        the_tags = !@opentsdb_style ? (t.dup << @riemann_env) : (t.dup << "env=#{riemann_env}")
+        the_tags = 
+          if tags.is_a?(Hash) 
+            {env: @riemann_env}.merge(tags).map{|k,v|"#{k}=#{v}"} 
+          else
+            tags.dup << @riemann_env 
+          end
         event = {
           host: @hostname,
           state: state,
@@ -39,12 +44,17 @@ module Riemann
           service: "#{@service_name}.#{service}"
         }
         event[:description] = description if description
+        add_event(event)
+      end
+
+      #Separate function so we can stub it out
+      def add_event(event)
         client << event
       end
 
       def report(service, metric, tags)
 
-        gauge(t, OK, metric, service)
+        gauge(tags, OK, metric, service)
       end
 
       def get_hostname

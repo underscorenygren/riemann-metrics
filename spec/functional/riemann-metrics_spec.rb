@@ -109,11 +109,82 @@ describe AwesomeController, :type => :controller do
       get 'custom_metrics'
     end
 
+    it 'should collect metrics in opentsdb style if enabled' do
+      Riemann::Metrics::Client.any_instance.should_receive(:gauge).with(
+        {controller: "AwesomeController", action: "index"},
+        "ok",
+        200,
+        "http_status"
+      )
+      Riemann::Metrics::Client.any_instance.should_receive(:gauge).with(
+        {controller: "AwesomeController", action: "index"},
+        "ok",
+        anything(),
+        "view_runtime"
+      )
+      Riemann::Metrics::Client.any_instance.should_receive(:gauge).with(
+        {controller: "AwesomeController", action: "index"},
+        "ok",
+        anything(),
+        "request_runtime"
+      )
+      Riemann::Metrics::Client.any_instance.should_receive(:gauge).with(
+        {controller: "AwesomeController", action: "index"},
+        "ok",
+        nil,
+        "db_runtime"
+      )
+      Riemann::Metrics.opentsdb!
+
+      get 'index'
+    end
+
     it 'should be able to access the client after initialization' do
 
       expect(Riemann::Metrics.client).not_to be_nil
       expect(Riemann::Metrics.handler).not_to be_nil
       expect(Riemann::Metrics.client {|c| !c.nil? }).to eq true
+
+      Riemann::Metrics::Client.any_instance.should_receive(:gauge).with(
+        ["tag"],
+        "ok",
+        1,
+        "name"
+      )
+
+      Riemann::Metrics.client {|c| 
+        c.report('name', 1, ['tag'])
+      }
+    end
+
+    it "should accept key value tags" do
+      Riemann::Metrics::Client.any_instance.should_receive(:add_event).with(
+        {host: anything(),
+         state: "ok",
+         metric: 1,
+         ttl: anything(),
+         tags: contain_exactly("key=val", "env=test"),
+         service: 'Rails.name'
+      }) 
+
+      Riemann::Metrics.client {|c| 
+        c.report('name', 1, {key: "val"})
+      }
+    end
+
+    it "should accept array tags" do
+      Riemann::Metrics::Client.any_instance.should_receive(:add_event).with(
+        {host: anything(),
+         state: "ok",
+         metric: 1,
+         ttl: anything(),
+         tags: contain_exactly("tag", "test"),
+         service: 'Rails.name'
+      }) 
+
+      Riemann::Metrics.client {|c| 
+        c.report('name', 1, ["tag"])
+      }
 
     end
 

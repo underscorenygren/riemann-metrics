@@ -33,7 +33,7 @@ module Riemann
         if !@client.nil?
           yield @client
         else
-          @client
+          false
         end
       else
         @client
@@ -64,6 +64,12 @@ module Riemann
     def self.gauge args
       handler_method = args[0].gsub(".","_").to_sym
       @handler.send handler_method, *args if @handler.respond_to?(handler_method)
+    end
+
+    def self.opentsdb!(enable = true)
+      if @client
+        @client.opentsdb_style = enable
+      end
     end
 
   end
