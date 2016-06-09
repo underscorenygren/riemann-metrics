@@ -21,7 +21,7 @@ describe AwesomeController, :type => :controller do
         ["AwesomeController", "index", "request_runtime"],
         "ok",
         anything(),
-        "AwesomeController.index.total_time"
+        "AwesomeController.index.request_runtime"
       )
       Riemann::Metrics::Client.any_instance.should_receive(:gauge).with(
         ["AwesomeController", "index", "db_runtime"],
@@ -56,7 +56,7 @@ describe AwesomeController, :type => :controller do
         ["AwesomeController", "send_email", "request_runtime"],
         "ok",
         anything(),
-        "AwesomeController.send_email.total_time"
+        "AwesomeController.send_email.request_runtime"
       )
       Riemann::Metrics::Client.any_instance.should_receive(:gauge).with(
         ["AwesomeMailer", "email_send_runtime"],
@@ -91,7 +91,7 @@ describe AwesomeController, :type => :controller do
         ["AwesomeController", "custom_metrics", "request_runtime"],
         "ok",
         anything(),
-        "AwesomeController.custom_metrics.total_time"
+        "AwesomeController.custom_metrics.request_runtime"
       )
       Riemann::Metrics::Client.any_instance.should_receive(:gauge).with(
         ["custom", "tag"],
