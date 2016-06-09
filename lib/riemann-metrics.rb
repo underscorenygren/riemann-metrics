@@ -29,7 +29,15 @@ module Riemann
     end
 
     def self.client
-      @client
+      if block_given?
+        if !@client.nil?
+          yield @client
+        else
+          @client
+        end
+      else
+        @client
+      end
     end
 
     def self.handler

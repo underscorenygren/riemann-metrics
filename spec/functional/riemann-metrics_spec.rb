@@ -113,6 +113,7 @@ describe AwesomeController, :type => :controller do
 
       expect(Riemann::Metrics.client).not_to be_nil
       expect(Riemann::Metrics.handler).not_to be_nil
+      expect(Riemann::Metrics.client {|c| !c.nil? }).to eq true
 
     end
 
