@@ -1,4 +1,6 @@
 require 'spec_helper'
+require 'riemann'
+
 
 describe AwesomeController, :type => :controller do
 
@@ -137,6 +139,8 @@ describe AwesomeController, :type => :controller do
       Riemann::Metrics.opentsdb!
 
       get 'index'
+
+      Riemann::Metrics.opentsdb!(false)
     end
 
     it 'should be able to access the client after initialization' do
@@ -185,7 +189,51 @@ describe AwesomeController, :type => :controller do
       Riemann::Metrics.client {|c| 
         c.report('name', 1, ["tag"])
       }
+    end
 
+    it "should accept no tags when reporting without tags" do
+
+      Riemann::Metrics::Client.any_instance.should_receive(:add_event).with(
+        {host: anything(),
+         state: "ok",
+         metric: 1,
+         ttl: anything(),
+         tags: ["test"],
+         service: 'Rails.serv'
+      }) 
+
+      Riemann::Metrics.client {|c| 
+        c.report('serv', 1, nil)
+      }
+
+    end
+
+    it "should accept no tags when reporting with tags" do
+      Riemann::Metrics.opentsdb!
+
+      Riemann::Metrics::Client.any_instance.should_receive(:add_event).with(
+        {host: anything(),
+         state: "ok",
+         metric: 1,
+         ttl: anything(),
+         tags: ["env=test"],
+         service: 'Rails.serv'
+      }) 
+
+      Riemann::Metrics.client {|c| 
+        c.report('serv', 1, nil)
+      }
+      Riemann::Metrics.opentsdb!(false)
+
+    end
+
+    it "should be able to connect and fail for riemann with tcp" do
+
+      #nonexist_host = '192.168.233.120'
+      nonexist_host = nil
+      cli = Riemann::Metrics::Client.new nonexist_host, nil, nil, nil, nil, {tcp_only: true}
+
+      expect { cli.report('test', 1, []) }.to raise_error(Riemann::Client::TcpSocket::Error)
     end
 
   end

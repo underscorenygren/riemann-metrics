@@ -14,10 +14,13 @@ module Riemann
       config.riemann_metrics.ttl = 5
       config.riemann_metrics.riemann_env = Rails.env
       config.riemann_metrics.opentsdb_style = false
+      config.riemann_metrics.tcp_only = false
 
       initializer "riemann_metrics.initialise" do |app|
         app_cfg = app.config.riemann_metrics
-        Riemann::Metrics.initialize(app_cfg.host, app_cfg.port, app_cfg.service_name, app_cfg.riemann_env, app_cfg.ttl, app_cfg.opentsdb_style) if app_cfg.enabled
+        opts = {opentsdb: app_cfg.opentsdb_style,
+                tcp_only: app_cfg.tcp_only}
+        Riemann::Metrics.initialize(app_cfg.host, app_cfg.port, app_cfg.service_name, app_cfg.riemann_env, app_cfg.ttl, opts) if app_cfg.enabled
       end
 
       initializer "riemann_metrics.subscribe" do |app|
@@ -56,8 +59,9 @@ module Riemann
       end
     end
 
-    def self.initialize(host, port, service_name, riemann_env, ttl, opentsdb_style)
-      @client = Riemann::Metrics::Client.new(host, port, service_name, riemann_env, ttl, opentsdb_style)
+    def self.initialize(host, port, service_name, riemann_env, ttl, opts)
+      opts = opts || {}
+      @client = Riemann::Metrics::Client.new(host, port, service_name, riemann_env, ttl, opts)
       @handler = Riemann::Metrics::NotificationsHandler.new(@client)
     end
 

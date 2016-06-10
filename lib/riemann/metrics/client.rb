@@ -14,14 +14,16 @@ module Riemann
 
       TTL = 10
 
-      def initialize host, port, service_name, riemann_env, ttl, opentsdb_style
-        @host = host
-        @port = port
-        @service_name = service_name
+      def initialize host, port, service_name, riemann_env, ttl, opts = nil
+        opts = opts || {}
+        @host = host || 'localhost'
+        @port = port || 5555
+        @service_name = service_name || 'ruby'
         @ttl = ttl || TTL
         @riemann_env = riemann_env || 'none'
-        @hostname = get_hostname
-        @opentsdb_style = opentsdb_style || false
+        @hostname = get_hostname || 'nohostname'
+        @opentsdb_style = opts[:opentsdb] || false
+        @tcp_only = opts[:tcp_only] || false
       end
 
       def client
@@ -29,6 +31,7 @@ module Riemann
       end
 
       def gauge tags, state, metric, service='', description=nil
+        tags = tags || (@opentsdb_style ? {} : [])
         the_tags = 
           if tags.is_a?(Hash) 
             {env: @riemann_env}.merge(tags).map{|k,v|"#{k}=#{v}"} 
@@ -49,7 +52,11 @@ module Riemann
 
       #Separate function so we can stub it out
       def add_event(event)
-        client << event
+        if @tcp_only
+          client.tcp
+        else
+          client
+        end << event
       end
 
       def report(service, metric, tags)
